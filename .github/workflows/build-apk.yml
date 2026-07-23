@@ -1,19 +1,7 @@
-# ============================================
-# GitHub Actions - Build APK tự động
-# ============================================
-# 
-# Cách dùng:
-#   1. Push code lên GitHub
-#   2. Vào tab "Actions" trên GitHub
-#   3. Chọn workflow "Build APK"
-#   4. Bấm "Run workflow"
-#   5. Đợi build xong, tải file APK từ "Artifacts"
-# ============================================
-
 name: Build APK
 
 on:
-  workflow_dispatch:        # Chạy thủ công
+  workflow_dispatch:
   push:
     branches: [ "main", "master" ]
     paths:
@@ -24,7 +12,6 @@ jobs:
   build:
     name: Build Android APK
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: ./android
@@ -42,18 +29,27 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # Cài Gradle và tạo gradle-wrapper.jar
-      - name: Setup Gradle
+      # Cài Gradle 8.5 (tương thích với AGP 8.2.0)
+      - name: Setup Gradle 8.5
         uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.5
 
-      - name: Generate Gradle Wrapper
-        run: gradle wrapper --gradle-version=8.5
+      # Tạo local.properties trỏ tới Android SDK
+      - name: Create local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      - name: Build APK with Gradle
-        run: ./gradlew assembleDebug --no-daemon
+      # Accept Android SDK licenses
+      - name: Accept SDK licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+
+      # Build APK
+      - name: Build APK
+        run: gradle assembleDebug --no-daemon --stacktrace
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
+      # Upload APK
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
