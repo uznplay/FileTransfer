@@ -36,14 +36,14 @@ pkg update -y
 echo -e "${GREEN}  => Hoàn tất.${NC}"
 echo ""
 
-# --- Bước 3: Cài đặt openssh ---
-echo -e "${YELLOW}[3/5] Cài đặt OpenSSH Server...${NC}"
-pkg install openssh -y
+# --- Bước 3: Cài đặt openssh và termux-api ---
+echo -e "${YELLOW}[3/6] Cài đặt OpenSSH Server + Termux-API...${NC}"
+pkg install openssh termux-api -y
 echo -e "${GREEN}  => Hoàn tất.${NC}"
 echo ""
 
 # --- Bước 4: Thiết lập mật khẩu cho SSH ---
-echo -e "${YELLOW}[4/5] Thiết lập mật khẩu SSH...${NC}"
+echo -e "${YELLOW}[4/6] Thiết lập mật khẩu SSH...${NC}"
 echo -e "${CYAN}  Nhập mật khẩu bạn muốn đặt (để trống = mặc định 'termux'):${NC}"
 read -s USER_PASSWORD
 USER_PASSWORD="${USER_PASSWORD:-termux}"
@@ -52,7 +52,7 @@ echo -e "${GREEN}  => Mật khẩu SSH đã được thiết lập.${NC}"
 echo ""
 
 # --- Bước 5: Khởi động SSH Server ---
-echo -e "${YELLOW}[5/5] Khởi động SSH Server...${NC}"
+echo -e "${YELLOW}[5/6] Khởi động SSH Server...${NC}"
 
 # Kill sshd nếu đang chạy để restart
 pkill -x sshd 2>/dev/null || true
@@ -60,6 +60,15 @@ pkill -x sshd 2>/dev/null || true
 # Khởi động sshd trên port 8022
 sshd -p 8022
 echo -e "${GREEN}  => SSH Server đã chạy trên port 8022.${NC}"
+echo ""
+
+# --- Bước 6: Tạo thư mục đích và hiển thị thông tin ---
+echo -e "${YELLOW}[6/6] Hoàn tất thiết lập...${NC}"
+
+# --- Tạo thư mục đích để nhận file ---
+DEST_DIR="$HOME/storage/downloads/FileTransfer"
+mkdir -p "$DEST_DIR"
+echo -e "${GREEN}  File nhận sẽ được lưu tại: $DEST_DIR${NC}"
 echo ""
 
 # --- Hiển thị thông tin kết nối ---
@@ -80,13 +89,11 @@ echo -e "  SSH Port:           ${CYAN}8022${NC}"
 echo -e "  Username:           ${CYAN}$(whoami)${NC}"
 echo -e "  Mật khẩu:           ${CYAN}(đã nhập ở bước 4)${NC}"
 echo ""
-echo -e "${YELLOW}  => Trên Desktop, hãy nhập các thông tin trên vào ứng dụng.${NC}"
+echo -e "  Tính năng:"
+echo -e "  ${GREEN}✓${NC} Gửi file qua SSH/SCP"
+echo -e "  ${GREEN}✓${NC} Gửi tin nhắn kèm file (hiện notification)"
 echo ""
-
-# --- Tạo thư mục đích để nhận file ---
-DEST_DIR="$HOME/storage/downloads/FileTransfer"
-mkdir -p "$DEST_DIR"
-echo -e "${GREEN}  File nhận sẽ được lưu tại: $DEST_DIR${NC}"
+echo -e "${YELLOW}  => Trên Desktop, hãy nhập các thông tin trên vào ứng dụng.${NC}"
 echo ""
 
 # --- Giữ sshd chạy nền ---

@@ -124,12 +124,17 @@ bash setup.sh
 ## Gửi file từ máy tính
 
 ```bash
-# Giao diện đồ họa
+# Giao diện đồ họa (có ô nhập tin nhắn kèm file)
 python main.py --gui
 
-# Dòng lệnh
+# Gửi file kèm tin nhắn
+python main.py --file "anh.jpg" --ip 192.168.1.100 -m "Nhớ xem ảnh này nha!"
+
+# Gửi file không lời nhắn
 python main.py --file "data.zip" --ip 192.168.1.100
 ```
+
+Gắn cờ `-m` hoặc `--message` để gửi kèm tin nhắn text. Điện thoại sẽ hiện **notification** với nội dung tin nhắn + tên file.
 
 ---
 

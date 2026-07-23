@@ -56,13 +56,15 @@ def save_config(config):
 
 # --- Hàm truyền file qua SCP ---
 
-def send_file_via_scp(local_path, config, progress_callback=None):
+def send_file_via_scp(local_path, config, message="", progress_callback=None):
     """
-    Gửi file tới Termux qua SCP sử dụng paramiko.
+    Gửi file + tin nhắn tới Termux qua SCP.
+    Sau khi gửi, hiển thị notification trên điện thoại.
     
     Args:
         local_path: Đường dẫn file cục bộ
         config: Dict chứa host, port, username, password
+        message: Tin nhắn text gửi kèm
         progress_callback: Hàm callback nhận (sent, total) để cập nhật tiến trình
     
     Returns:
@@ -131,6 +133,37 @@ def send_file_via_scp(local_path, config, progress_callback=None):
 
         print(f"\n[+] Gửi file thành công: {file_name}")
         print(f"    => {remote_path}/{file_name}")
+
+        # Nếu có message, gửi kèm .msg và hiển thị notification
+        if message.strip():
+            msg_file_name = Path(file_name).stem + ".msg"
+            msg_content = f"[{file_name}]\n{message.strip()}"
+
+            # Tạo file .msg tạm
+            import tempfile
+            tmp_msg = Path(tempfile.gettempdir()) / msg_file_name
+            tmp_msg.write_text(msg_content, encoding="utf-8")
+
+            # Gửi file .msg
+            with SCPClient(ssh.get_transport()) as scp:
+                scp.put(str(tmp_msg), f"{remote_path}/{msg_file_name}")
+            tmp_msg.unlink()  # Xóa file tạm
+            print(f"[+] Đã gửi tin nhắn kèm: {msg_file_name}")
+
+            # Hiển thị notification trên điện thoại
+            notif_title = "📁 File Transfer"
+            notif_content = f"{message.strip()}\n📎 {file_name}"
+            # Escape cho shell
+            notif_content_esc = notif_content.replace("'", "'\\''")
+            cmd = (
+                f"termux-notification -t '{notif_title}' "
+                f"-c '{notif_content_esc}' "
+                f"--action 'am start -a android.intent.action.VIEW "
+                f"-d file://{remote_path}/{file_name}' "
+                f"2>/dev/null || true"
+            )
+            ssh.exec_command(cmd)
+            print("[+] Đã gửi thông báo tới điện thoại!")
 
         ssh.close()
         return True
@@ -265,7 +298,9 @@ def cli_mode(args):
         success = send_file_via_http(args.file, config)
     else:
         print(f"[*] Bắt đầu gửi file qua SCP: {args.file}")
-        success = send_file_via_scp(args.file, config)
+        if args.message:
+            print(f"[*] Tin nhắn: {args.message}")
+        success = send_file_via_scp(args.file, config, message=args.message or "")
 
     # Tự động lưu cấu hình nếu gửi thành công và có IP
     if success and config["host"]:
@@ -361,6 +396,16 @@ class FileTransferApp:
             side="left", fill="x", expand=True, padx=(0, 10)
         )
         ttk.Button(file_grid, text="Chọn file...", command=self._browse_file).pack(side="right")
+
+        # --- Ô nhập tin nhắn ---
+        msg_frame = ttk.Frame(file_frame)
+        msg_frame.pack(fill="x", pady=(8, 0))
+
+        ttk.Label(msg_frame, text="Tin nhắn:").pack(side="left", padx=(0, 5))
+        self.msg_var = tk.StringVar()
+        msg_entry = ttk.Entry(msg_frame, textvariable=self.msg_var, width=50)
+        msg_entry.pack(side="left", fill="x", expand=True)
+        msg_entry.insert(0, "")
 
         # --- Thanh tiến trình ---
         progress_frame = ttk.LabelFrame(main_frame, text="Tiến trình gửi", padding="10")
@@ -484,7 +529,11 @@ class FileTransferApp:
 
         # Gửi file trong luồng chính (có callback)
         try:
-            success = send_file_via_scp(self.selected_file, config, self._update_progress)
+            success = send_file_via_scp(
+                self.selected_file, config,
+                message=self.msg_var.get(),
+                progress_callback=self._update_progress
+            )
             if success:
                 self.status_var.set("Hoàn tất! File đã được gửi thành công.")
                 messagebox.showinfo("Thành công", "File đã được gửi tới Termux!")
@@ -516,11 +565,13 @@ Ví dụ:
   python main.py --file photo.jpg               # Gửi file với cấu hình đã lưu
   python main.py --file data.zip --ip 192.168.1.100  # Gửi file tới IP cụ thể
   python main.py --file doc.pdf --ip 10.0.2.15 --port 8022 --user u0_a123
+  python main.py --file anh.jpg -m "Nhớ xem ảnh này nha!" --ip 192.168.1.100  # Gửi file + tin nhắn
   python main.py --file video.mp4 --ip 192.168.1.x --port 8080 --http  # Gửi qua HTTP tới APK
         """,
     )
     parser.add_argument("--gui", action="store_true", help="Mở giao diện đồ họa (Tkinter)")
     parser.add_argument("--file", "-f", type=str, help="Đường dẫn file cần gửi")
+    parser.add_argument("--message", "-m", type=str, help="Tin nhắn text gửi kèm file")
     parser.add_argument("--ip", type=str, help="Địa chỉ IP của Termux hoặc APK")
     parser.add_argument("--port", type=int, help="Cổng SSH (mặc định: 8022) hoặc HTTP (mặc định: 8080)")
     parser.add_argument("--user", "-u", type=str, help="Username Termux")
