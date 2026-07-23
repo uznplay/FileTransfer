@@ -29,8 +29,19 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # Cài Gradle 8.5 thủ công (tránh lỗi cache của gradle/actions)
-      - name: Install Gradle 8.5 manually
+      # Debug: in thông tin môi trường
+      - name: Debug - show env
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "JAVA_HOME=$JAVA_HOME"
+          ls -la $ANDROID_HOME/ 2>/dev/null || echo "No ANDROID_HOME"
+          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "No platforms"
+          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null || echo "No build-tools"
+          which java
+          java -version
+
+      # Cài Gradle 8.5
+      - name: Install Gradle 8.5
         run: |
           wget -q "https://services.gradle.org/distributions/gradle-8.5-bin.zip"
           unzip -q gradle-8.5-bin.zip
@@ -38,14 +49,20 @@ jobs:
           echo "$PWD/gradle-8.5/bin" >> $GITHUB_PATH
         working-directory: /tmp
 
-      - name: Tạo local.properties
+      - name: Verify Gradle
+        run: gradle --version
+
+      # Cài SDK components cần thiết
+      - name: Install SDK components
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" 2>&1
+
+      - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      - name: Accept SDK licenses
-        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
-
+      # Build APK
       - name: Build APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+        run: gradle assembleDebug --no-daemon --stacktrace --info
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
