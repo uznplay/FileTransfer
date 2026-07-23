@@ -29,27 +29,26 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # Cài Gradle 8.5 (tương thích với AGP 8.2.0)
-      - name: Setup Gradle 8.5
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: 8.5
+      # Cài Gradle 8.5 thủ công (tránh lỗi cache của gradle/actions)
+      - name: Install Gradle 8.5 manually
+        run: |
+          wget -q "https://services.gradle.org/distributions/gradle-8.5-bin.zip"
+          unzip -q gradle-8.5-bin.zip
+          echo "GRADLE_HOME=$PWD/gradle-8.5" >> $GITHUB_ENV
+          echo "$PWD/gradle-8.5/bin" >> $GITHUB_PATH
+        working-directory: /tmp
 
-      # Tạo local.properties trỏ tới Android SDK
-      - name: Create local.properties
+      - name: Tạo local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      # Accept Android SDK licenses
       - name: Accept SDK licenses
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
 
-      # Build APK
       - name: Build APK
         run: gradle assembleDebug --no-daemon --stacktrace
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
-      # Upload APK
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
