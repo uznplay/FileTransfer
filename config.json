@@ -1,0 +1,10 @@
+{
+    "_comment": "Cấu hình kết nối SSH tới Termux",
+    "host": "",
+    "port": 8022,
+    "username": "u0_a123",
+    "password": "termux",
+    "remote_path": "~/storage/downloads/FileTransfer",
+    "use_key": false,
+    "key_path": ""
+}

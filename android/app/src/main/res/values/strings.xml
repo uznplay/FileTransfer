@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">File Transfer</string>
+    <string name="server_running">Server đang chạy</string>
+    <string name="server_stopped">Server đã dừng</string>
+    <string name="start_server">Khởi động server</string>
+    <string name="stop_server">Dừng server</string>
+    <string name="no_file">Chưa có file nào</string>
+    <string name="click_to_upload">Nhấp để chọn file</string>
+    <string name="upload_success">Tải lên thành công!</string>
+</resources>

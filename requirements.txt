@@ -1,0 +1,8 @@
+# ==========================================
+# FileTransfer - Python Dependencies
+# ==========================================
+# Sử dụng: pip install -r requirements.txt
+
+paramiko>=3.0.0    # SSH/SCP client để truyền file qua SSH
+scp>=0.14.0        # SCP wrapper cho paramiko (truyền file qua giao thức SCP)
+requests>=2.28.0   # Gửi file qua HTTP (dùng với Android APK)

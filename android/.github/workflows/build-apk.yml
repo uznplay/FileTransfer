@@ -1,0 +1,89 @@
+# ============================================
+# GitHub Actions - Build APK tự động
+# ============================================
+# 
+# Cách dùng:
+#   1. Push code lên GitHub
+#   2. Vào tab "Actions" trên GitHub
+#   3. Chọn workflow "Build APK"
+#   4. Bấm "Run workflow"
+#   5. Đợi build xong, tải file APK từ "Artifacts"
+#
+# Hoặc tự động chạy mỗi khi push code mới
+# ============================================
+
+name: Build APK
+
+on:
+  # Chạy thủ công từ GitHub UI
+  workflow_dispatch:
+
+  # Tự động chạy khi push code mới
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - 'android/**'
+      - '.github/workflows/build-apk.yml'
+
+  # Tự động chạy khi tạo Pull Request
+  pull_request:
+    branches: [ "main", "master" ]
+    paths:
+      - 'android/**'
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest  # Dùng Ubuntu (miễn phí)
+
+    defaults:
+      run:
+        working-directory: ./android
+
+    steps:
+      # Bước 1: Lấy code từ repository
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # Bước 2: Cài đặt Java 17
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'  # Eclipse Temurin (Adoptium)
+
+      # Bước 3: Cài đặt Android SDK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # Bước 4: Cấp quyền cho gradlew
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      # Bước 5: Build APK Debug
+      - name: Build APK with Gradle
+        run: ./gradlew assembleDebug --no-daemon
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+
+      # Bước 6: Ký tên APK (tùy chọn, bỏ qua nếu không cần)
+      # - name: Sign APK
+      #   run: |
+      #     # Cần setup keystore trong GitHub Secrets
+      #     echo "Bỏ qua ký tên (debug build)"
+
+      # Bước 7: Upload APK lên GitHub Artifacts
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FileTransfer-APK-${{ github.sha }}
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30  # Giữ file trong 30 ngày
+
+      # Bước 8: Tạo Release (khi tạo tag)
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: android/app/build/outputs/apk/debug/*.apk
+          generate_release_notes: true
