@@ -66,13 +66,7 @@ jobs:
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
-      # Bước 6: Ký tên APK (tùy chọn, bỏ qua nếu không cần)
-      # - name: Sign APK
-      #   run: |
-      #     # Cần setup keystore trong GitHub Secrets
-      #     echo "Bỏ qua ký tên (debug build)"
-
-      # Bước 7: Upload APK lên GitHub Artifacts
+      # Bước 6: Upload APK lên GitHub Artifacts
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -80,7 +74,7 @@ jobs:
           path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 30  # Giữ file trong 30 ngày
 
-      # Bước 8: Tạo Release (khi tạo tag)
+      # Bước 7: Tạo Release (khi tạo tag)
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
